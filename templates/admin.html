@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>PinkReads Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#b80049",
+                        "primary-container": "#e2165f",
+                        "on-primary": "#ffffff",
+                        "secondary": "#565e74",
+                        "on-secondary-fixed": "#131b2e",
+                        "surface": "#f7f9fb",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#006a34",
+                        "error": "#ba1a1a"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .font-headline { font-family: 'Manrope', sans-serif; }
+        .tab-pane { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+
+{% set manhwa_count = books | selectattr('format', 'equalto', 'Manhwa') | list | length %}
+{% set novel_count = books | selectattr('format', 'equalto', 'Novel') | list | length %}
+{% set story_count = books | selectattr('format', 'equalto', 'Story') | list | length %}
+
+<body class="bg-surface text-slate-800 antialiased flex overflow-hidden">
+    
+    <aside class="h-screen w-64 fixed left-0 top-0 bg-[#131b2e] flex flex-col py-6 z-50 shadow-2xl shadow-slate-950/50">
+        <div class="px-6 mb-10">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-container flex items-center justify-center">
+                    <span class="material-symbols-outlined text-white text-sm">auto_stories</span>
+                </div>
+                <div>
+                    <h1 class="text-pink-500 font-bold uppercase tracking-widest text-xs">Admin Panel</h1>
+                    <p class="text-slate-400 text-[10px] uppercase font-medium">Management Suite</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 space-y-1">
+            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-btn w-full flex items-center gap-3 px-6 py-3 bg-pink-600/10 text-pink-400 border-r-4 border-pink-500 transition-colors duration-200">
+                <span class="material-symbols-outlined">dashboard</span>
+                <span class="font-['Inter'] text-sm font-medium">Overview</span>
+            </button>
+            <button onclick="switchTab('inventory')" id="tab-inventory" class="nav-btn w-full flex items-center gap-3 px-6 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-colors duration-200">
+                <span class="material-symbols-outlined">inventory_2</span>
+                <span class="font-['Inter'] text-sm font-medium">Inventory</span>
+            </button>
+            <button onclick="switchTab('publish')" id="tab-publish" class="nav-btn w-full flex items-center gap-3 px-6 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-colors duration-200">
+                <span class="material-symbols-outlined">library_add</span>
+                <span class="font-['Inter'] text-sm font-medium">Publish Title</span>
+            </button>
+            <button onclick="switchTab('upload')" id="tab-upload" class="nav-btn w-full flex items-center gap-3 px-6 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-colors duration-200">
+                <span class="material-symbols-outlined">upload_file</span>
+                <span class="font-['Inter'] text-sm font-medium">Upload Chapter</span>
+            </button>
+            {% if session.role == 'superadmin' %}
+            <button onclick="switchTab('staff')" id="tab-staff" class="nav-btn w-full flex items-center gap-3 px-6 py-3 text-slate-400 hover:text-pink-400 hover:bg-slate-800/50 transition-colors duration-200">
+                <span class="material-symbols-outlined">admin_panel_settings</span>
+                <span class="font-['Inter'] text-sm font-medium">Access Logs</span>
+            </button>
+            {% endif %}
+        </nav>
+
+        <div class="px-6 mt-auto">
+            <div class="flex items-center gap-3 p-3 mb-6 rounded-xl bg-slate-800/40">
+                <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg">
+                    {{ session.username[0] | upper }}
+                </div>
+                <div class="overflow-hidden">
+                    <p class="text-slate-100 text-xs font-bold truncate">{{ session.username }}</p>
+                    <p class="text-slate-500 text-[10px] uppercase tracking-widest truncate">{{ session.role }}</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 ml-64 overflow-y-auto min-h-screen bg-surface pb-20">
+        
+        <header class="sticky top-0 w-full z-40 bg-white/70 backdrop-blur-xl h-16 flex justify-between items-center px-8 border-b border-slate-100">
+            <div class="flex items-center gap-8">
+                <span class="text-2xl font-black text-pink-600 font-headline tracking-tight">PinkReads</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="/" class="text-slate-400 hover:text-primary transition-colors font-bold text-sm flex items-center gap-1">
+                    <span class="material-symbols-outlined text-lg">public</span> View Site
+                </a>
+                <div class="w-px h-6 bg-slate-200"></div>
+                <a href="/logout" class="text-pink-600 font-headline font-bold text-sm hover:opacity-80 transition-all duration-200">Logout</a>
+            </div>
+        </header>
+
+        <div class="p-8 max-w-7xl mx-auto space-y-12">
+            
+            <div id="pane-dashboard" class="tab-pane block space-y-12">
+                <section class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-on-secondary-fixed font-headline tracking-tight">System Insights</h2>
+                        <p class="text-secondary text-sm mt-1">Real-time performance metrics for PinkReads ecosystem.</p>
+                    </div>
+                </section>
+
+                <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-surface-container-lowest p-6 rounded-xl space-y-4 shadow-sm border border-slate-100">
+                        <div class="w-12 h-12 rounded-xl bg-pink-100 flex items-center justify-center mb-4"><span class="material-symbols-outlined text-pink-600">menu_book</span></div>
+                        <div><p class="text-secondary text-xs uppercase tracking-widest font-bold">Total Titles</p><h3 class="text-2xl font-black text-on-secondary-fixed">{{ books|length }}</h3></div>
+                    </div>
+                    <div class="bg-surface-container-lowest p-6 rounded-xl space-y-4 shadow-sm border border-slate-100">
+                        <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-4"><span class="material-symbols-outlined text-blue-600">description</span></div>
+                        <div><p class="text-secondary text-xs uppercase tracking-widest font-bold">Total Chapters</p><h3 class="text-2xl font-black text-on-secondary-fixed">{{ total_chapters }}</h3></div>
+                    </div>
+                    <div class="bg-surface-container-lowest p-6 rounded-xl space-y-4 shadow-sm border border-slate-100">
+                        <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center mb-4"><span class="material-symbols-outlined text-green-600">group</span></div>
+                        <div><p class="text-secondary text-xs uppercase tracking-widest font-bold">Active Staff</p><h3 class="text-2xl font-black text-on-secondary-fixed">{{ staff|length if staff else 1 }}</h3></div>
+                    </div>
+                    <div class="bg-surface-container-lowest p-6 rounded-xl space-y-4 shadow-sm border border-slate-100">
+                        <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-4"><span class="material-symbols-outlined text-amber-600">visibility</span></div>
+                        <div><p class="text-secondary text-xs uppercase tracking-widest font-bold">Total Reads</p><h3 class="text-2xl font-black text-on-secondary-fixed">--</h3></div>
+                    </div>
+                </section>
+
+                <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-slate-100">
+                        <h4 class="text-lg font-bold font-headline text-on-secondary-fixed mb-6">Most Updated Series</h4>
+                        <div class="relative w-full"><canvas id="activityChart" height="120"></canvas></div>
+                    </div>
+                    <div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center">
+                        <h4 class="text-lg font-bold font-headline text-on-secondary-fixed mb-6 w-full text-left">Format Distribution</h4>
+                        <div class="w-48 h-48 relative"><canvas id="formatChart"></canvas></div>
+                    </div>
+                </section>
+            </div>
+
+            <div id="pane-inventory" class="tab-pane hidden">
+                <h2 class="text-3xl font-extrabold text-on-secondary-fixed font-headline tracking-tight mb-8">Current Inventory</h2>
+                <div class="space-y-3">
+                    {% for book in books %}
+                    <div class="bg-surface-container-lowest p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between group hover:shadow-md transition-all shadow-sm border border-slate-100">
+                        <div class="flex items-center gap-4">
+                            <img src="{{ book.cover_image_url or '/static/uploads/covers/default.png' }}" class="w-12 h-16 rounded object-cover shadow-sm">
+                            <div>
+                                <h5 class="font-bold text-on-secondary-fixed text-sm">{{ book.title }}</h5>
+                                <p class="text-xs text-secondary mt-1">{{ book.author }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-6 mt-4 md:mt-0">
+                            <div class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-widest">{{ book.format }}</div>
+                            <div class="flex items-center gap-3">
+                                <button onclick="openEditModal({{ book.id }})" class="text-primary text-sm font-bold hover:underline">Edit</button>
+                                {% if session.role == 'superadmin' %}
+                                <form action="/admin/delete/{{ book.id }}" method="POST" onsubmit="return confirm('Delete this book?');" class="inline">
+                                    <button type="submit" class="text-error text-sm font-bold hover:underline">Delete</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="p-12 text-center border-2 border-dashed border-slate-200 rounded-xl">
+                        <span class="material-symbols-outlined text-4xl text-slate-300 mb-2">inventory_2</span>
+                        <p class="text-slate-500 font-bold">Your inventory is empty.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div id="pane-publish" class="tab-pane hidden">
+                <div class="max-w-2xl bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-slate-100">
+                    <h2 class="text-2xl font-extrabold text-on-secondary-fixed font-headline tracking-tight mb-6">Publish New Title</h2>
+                    <form action="/admin/add" method="POST" enctype="multipart/form-data" class="space-y-5">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Series Title</label>
+                            <input type="text" name="title" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" required>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Author Name</label>
+                                <input type="text" name="author" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Format</label>
+                                <select name="format" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                                    <option value="Manhwa">Manhwa</option>
+                                    <option value="Novel">Novel</option>
+                                    <option value="Story">Story</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Genres (Comma separated)</label>
+                            <input type="text" name="genres" placeholder="Action, Fantasy, Romance..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Description</label>
+                            <textarea name="description" rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Cover Image</label>
+                            <input type="file" name="cover_image" accept="image/*" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm">
+                        </div>
+                        <button type="submit" class="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-primary-container transition-colors mt-4">Add to Catalog</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="pane-upload" class="tab-pane hidden">
+                <div class="max-w-2xl bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-slate-100">
+                    <h2 class="text-2xl font-extrabold text-on-secondary-fixed font-headline tracking-tight mb-6">Upload Chapter</h2>
+                    <form action="/admin/add_chapter" method="POST" enctype="multipart/form-data" class="space-y-5">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Select Book</label>
+                            <select name="book_id" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary" required>
+                                <option value="" disabled selected>Select Book...</option>
+                                {% for book in books %}
+                                    <option value="{{ book.id }}">{{ book.title }} ({{ book.format }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Chapter #</label>
+                                <input type="number" step="0.1" name="chapter_number" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Content Type</label>
+                                <select name="content_type" id="contentTypeSelect" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary" required>
+                                    <option value="Text">Novel / Story (Text)</option>
+                                    <option value="ZipFolder">Manhwa (ZIP File)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Chapter Title (Optional)</label>
+                            <input type="text" name="title" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary">
+                        </div>
+                        
+                        <div id="textInputDiv">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Story Text (HTML Allowed)</label>
+                            <textarea name="novel_text" rows="8" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary"></textarea>
+                        </div>
+                        <div id="zipInputDiv" style="display: none;">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Upload ZIP Folder (Images)</label>
+                            <input type="file" name="chapter_zip" accept=".zip" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm">
+                        </div>
+
+                        <button type="submit" class="w-full bg-[#131b2e] text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition-colors mt-4">Publish Chapter</button>
+                    </form>
+                </div>
+            </div>
+
+            {% if session.role == 'superadmin' %}
+            <div id="pane-staff" class="tab-pane hidden">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-slate-100 h-fit">
+                        <h4 class="text-lg font-bold font-headline text-on-secondary-fixed mb-6">Add Staff Account</h4>
+                        <form action="/admin/add_staff" method="POST" class="space-y-4">
+                            <input type="text" name="username" placeholder="New Username" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary" required>
+                            <input type="password" name="password" placeholder="Temporary Password" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary" required>
+                            <select name="role" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary">
+                                <option value="subadmin">Subadmin</option>
+                                <option value="superadmin">Superadmin</option>
+                            </select>
+                            <button type="submit" class="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-primary-container">Create Account</button>
+                        </form>
+                    </div>
+                    <div class="md:col-span-2 bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-slate-100">
+                        <h4 class="text-lg font-bold font-headline text-on-secondary-fixed mb-6">Active System Accounts</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="text-slate-400 border-b border-slate-100">
+                                        <th class="pb-3 font-medium">Username</th>
+                                        <th class="pb-3 font-medium">Role</th>
+                                        <th class="pb-3 font-medium text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for member in staff %}
+                                    <tr class="border-b border-slate-50">
+                                        <td class="py-4 font-bold text-slate-700">{{ member.username }}</td>
+                                        <td class="py-4">
+                                            <span class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest {% if member.role == 'superadmin' %}bg-primary/10 text-primary{% else %}bg-blue-100 text-blue-600{% endif %}">
+                                                {{ member.role }}
+                                            </span>
+                                        </td>
+                                        <td class="py-4 text-right text-green-500 font-bold text-xs flex items-center justify-end gap-1"><span class="material-symbols-outlined text-[14px]">check_circle</span> Active</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </main>
+
+    {% for book in books %}
+    <div id="editModal-{{ book.id }}" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md m-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-xl text-slate-800 font-headline">Edit Title</h3>
+                <button onclick="closeEditModal({{ book.id }})" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <form action="/admin/edit/{{ book.id }}" method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Title</label>
+                    <input type="text" name="title" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2" value="{{ book.title }}" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Author</label>
+                    <input type="text" name="author" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2" value="{{ book.author }}" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Format</label>
+                    <select name="format" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2">
+                        <option value="Manhwa" {% if book.format == 'Manhwa' %}selected{% endif %}>Manhwa</option>
+                        <option value="Novel" {% if book.format == 'Novel' %}selected{% endif %}>Novel</option>
+                        <option value="Story" {% if book.format == 'Story' %}selected{% endif %}>Story</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-[#131b2e] text-white font-bold py-3 rounded-lg hover:bg-slate-800 mt-2">Save Changes</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+
+    <script>
+        // 1. Pure Tailwind Tab Switcher
+        function switchTab(tabId) {
+            // Hide all panes
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.add('hidden');
+                pane.classList.remove('block');
+            });
+            // Show target pane
+            document.getElementById('pane-' + tabId).classList.remove('hidden');
+            document.getElementById('pane-' + tabId).classList.add('block');
+
+            // Reset all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-pink-600/10', 'text-pink-400', 'border-r-4', 'border-pink-500');
+                btn.classList.add('text-slate-400', 'hover:text-slate-100', 'hover:bg-slate-800/50');
+            });
+            
+            // Highlight active button
+            const activeBtn = document.getElementById('tab-' + tabId);
+            activeBtn.classList.remove('text-slate-400', 'hover:text-slate-100', 'hover:bg-slate-800/50');
+            activeBtn.classList.add('bg-pink-600/10', 'text-pink-400', 'border-r-4', 'border-pink-500');
+            
+            // Save state to local storage
+            localStorage.setItem('activeAdminTab', tabId);
+        }
+
+        // On load, check if we saved a tab
+        document.addEventListener("DOMContentLoaded", function() {
+            const activeTabId = localStorage.getItem('activeAdminTab');
+            if (activeTabId && document.getElementById('tab-' + activeTabId)) {
+                switchTab(activeTabId);
+            }
+        });
+
+        // 2. Content Type Toggle (Zip vs Text)
+        document.getElementById('contentTypeSelect').addEventListener('change', function() {
+            if (this.value === 'Text') {
+                document.getElementById('textInputDiv').style.display = 'block';
+                document.getElementById('zipInputDiv').style.display = 'none';
+            } else {
+                document.getElementById('textInputDiv').style.display = 'none';
+                document.getElementById('zipInputDiv').style.display = 'block';
+            }
+        });
+
+        // 3. Edit Modal Toggles
+        function openEditModal(id) { document.getElementById('editModal-' + id).classList.remove('hidden'); document.getElementById('editModal-' + id).classList.add('flex'); }
+        function closeEditModal(id) { document.getElementById('editModal-' + id).classList.add('hidden'); document.getElementById('editModal-' + id).classList.remove('flex'); }
+
+        // 4. Chart.js (Real Data!)
+        const formatCtx = document.getElementById('formatChart').getContext('2d');
+        new Chart(formatCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Manhwa', 'Novels', 'Stories'],
+                datasets: [{ data: [{{ manhwa_count }}, {{ novel_count }}, {{ story_count }}], backgroundColor: ['#b80049', '#131b2e', '#006a34'], borderWidth: 0 }]
+            },
+            options: { cutout: '75%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15, font: {size: 10} } } } }
+        });
+
+        const activityCtx = document.getElementById('activityChart').getContext('2d');
+        new Chart(activityCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_labels | tojson }},
+                datasets: [{ label: 'Chapters Uploaded', data: {{ chart_data | tojson }}, backgroundColor: '#b80049', borderRadius: 4 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { borderDash: [5, 5] } } } }
+        });
+    </script>
+</body>
+</html>

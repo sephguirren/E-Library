@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center" style="margin-top: 100px; margin-bottom: 150px;">
+    <div class="col-md-4">
+        <div class="card p-4 shadow-sm border-0" style="border-radius: 15px; background-color: white;">
+            <h3 class="fw-bold text-center mb-4" style="color: var(--pink-primary);">Staff Login</h3>
+            
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                <div class="alert alert-danger p-2 text-center" style="font-size: 0.9rem;">{{ messages[0] }}</div>
+              {% endif %}
+            {% endwith %}
+
+            <form action="/login" method="POST">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Username</label>
+                    <input type="text" name="username" class="form-control" style="background-color: #f8f9fa; border: none;" required>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted">Password</label>
+                    <input type="password" name="password" class="form-control" style="background-color: #f8f9fa; border: none;" required>
+                </div>
+                <button type="submit" class="btn text-white w-100 fw-bold py-2" style="background-color: var(--pink-primary); border-radius: 8px;">Access Dashboard</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

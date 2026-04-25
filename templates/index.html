@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>PinkReads - The Digital Curator</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#b80049",
+                        "primary-container": "#e2165f",
+                        "on-primary": "#ffffff",
+                        "on-primary-container": "#fffbff",
+                        "primary-fixed-dim": "#ffb2be",
+                        "secondary": "#565e74",
+                        "secondary-container": "#dae2fd",
+                        "on-secondary-container": "#5c647a",
+                        /* --- UPDATED BACKGROUND COLORS TO A SOFT BLUSH PINK --- */
+                        "surface": "#fff5f8", 
+                        "surface-variant": "#fce8ed",
+                        "surface-container-low": "#fff0f4",
+                        "surface-container-highest": "#f9e1e6",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#2a1f22",
+                        "on-surface-variant": "#5b3f43",
+                        "on-secondary-fixed": "#131b2e"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .reading-gradient { background: linear-gradient(135deg, #b80049 0%, #e2165f 100%); }
+        /* Chatbot Animations */
+        #chatWindow { transition: all 0.3s ease-in-out; transform-origin: bottom right; }
+        .chat-hidden { opacity: 0; transform: scale(0.8); pointer-events: none; }
+        .chat-visible { opacity: 1; transform: scale(1); pointer-events: auto; }
+        .typing-dot { animation: typing 1.4s infinite ease-in-out; fill: #b80049; }
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface selection:bg-primary-container selection:text-on-primary-container">
+
+    <nav class="fixed top-0 w-full z-50 flex justify-between items-center px-8 h-16 max-w-full bg-white/80 backdrop-blur-xl shadow-sm border-b border-pink-100">
+        <div class="flex items-center gap-8">
+            <span class="text-2xl font-black text-primary font-headline tracking-tight">PinkReads</span>
+            <div class="hidden md:flex gap-6 items-center">
+                <a id="nav-home" class="text-primary border-b-2 border-primary pb-1 font-headline font-bold tracking-tight transition-all duration-300" href="#">Homepage</a>
+                <a id="nav-catalog" class="text-slate-600 border-b-2 border-transparent hover:text-primary hover:border-primary pb-1 font-headline font-bold tracking-tight transition-all duration-300" href="#catalog">Catalog</a>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            {% if session.get('admin_id') %}
+                <span class="hidden md:block font-bold text-sm text-slate-500 mr-2">Hello, {{ session.username }}</span>
+                <a href="/admin" class="text-slate-600 font-headline font-bold hover:text-primary transition-all duration-200">Dashboard</a>
+                <a href="/logout" class="bg-gradient-to-br from-primary to-primary-container text-on-primary px-6 py-2 rounded-full font-headline font-bold hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5">Logout</a>
+            {% else %}
+                <a href="/login" class="text-slate-600 font-headline font-bold hover:text-primary transition-all duration-200">Staff Login</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main class="pt-24 pb-32 px-4 md:px-8 max-w-7xl mx-auto">
+        <header class="relative mb-16 rounded-2xl overflow-hidden bg-on-secondary-fixed min-h-[500px] flex items-center shadow-2xl">
+            <div class="absolute inset-0 z-0">
+                <img class="w-full h-full object-cover opacity-40" alt="Hero Background" src="https://images.unsplash.com/photo-1618365908648-e71bc5714c0e?q=80&w=2832&auto=format&fit=crop"/>
+                <div class="absolute inset-0 bg-gradient-to-r from-[#0f172a] via-[#0f172a]/80 to-transparent"></div>
+            </div>
+            <div class="relative z-10 p-8 md:p-16 max-w-2xl">
+                <span class="inline-block px-4 py-1.5 bg-primary/20 text-primary-fixed-dim rounded-full text-xs font-bold tracking-widest uppercase mb-6 font-label border border-primary/30">FEATURED SERIES</span>
+                <h1 class="text-5xl md:text-7xl font-black text-white font-headline leading-tight mb-6">Bound by the <span class="text-primary-fixed-dim">Eclipse</span></h1>
+                <p class="text-slate-300 text-lg leading-relaxed mb-8 font-body">In a world where light is a currency and shadows are alive, one reader discovers the final chapter was never written. Explore the most immersive Web Novels of the season.</p>
+                <div class="flex gap-4">
+                    <a href="{% if books %}/read_book/{{ books[0].id }}{% else %}#{% endif %}" class="bg-primary text-white px-8 py-3.5 rounded-full font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-lg shadow-primary/30 w-fit">
+                        <span class="material-symbols-outlined" data-icon="play_arrow">play_arrow</span> 
+                        {% if books %}Read {{ books[0].title }}{% else %}Read Now{% endif %}
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <div id="catalog" class="bg-surface-container-low rounded-2xl p-4 mb-12 flex flex-col md:flex-row gap-4 items-center justify-between border border-pink-100 shadow-sm">
+            <div class="relative w-full md:w-96">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+                <input id="searchInput" class="w-full pl-12 pr-4 py-3.5 bg-white border border-pink-100 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-on-surface" placeholder="Search title or author..." type="text"/>
+            </div>
+            
+            <div class="flex gap-2 overflow-x-auto hide-scrollbar w-full md:w-auto pb-2 md:pb-0" id="filterContainer">
+                <button class="filter-btn active px-6 py-2.5 bg-primary-container text-on-primary-container rounded-xl font-bold whitespace-nowrap shadow-sm transition-all" data-filter="all">All</button>
+                <button class="filter-btn px-6 py-2.5 bg-white border border-pink-100 text-slate-600 rounded-xl font-medium hover:bg-pink-50 transition-all whitespace-nowrap" data-filter="Manhwa">Manhwa</button>
+                <button class="filter-btn px-6 py-2.5 bg-white border border-pink-100 text-slate-600 rounded-xl font-medium hover:bg-pink-50 transition-all whitespace-nowrap" data-filter="Novel">Web Novels</button>
+                <button class="filter-btn px-6 py-2.5 bg-white border border-pink-100 text-slate-600 rounded-xl font-medium hover:bg-pink-50 transition-all whitespace-nowrap" data-filter="Story">Stories</button>
+            </div>
+        </div>
+
+        <section>
+            <div class="flex justify-between items-end mb-8">
+                <div>
+                    <h2 class="text-3xl font-black font-headline text-on-secondary-fixed">Trending Now</h2>
+                    <p class="text-on-surface-variant">The stories everyone is talking about.</p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8" id="bookGrid">
+                {% for book in books %}
+                <div class="book-card group cursor-pointer flex flex-col" data-title="{{ book.title | lower }}" data-author="{{ book.author_name | lower }}" data-format="{{ book.format }}">
+                    <div class="relative rounded-2xl overflow-hidden mb-4 shadow-md transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1 bg-white border border-pink-50 aspect-[2/3]">
+                        <img class="w-full h-full object-cover" src="{{ book.cover_image_url or '/static/uploads/covers/default.png' }}" alt="{{ book.title }}"/>
+                        
+                        <div class="absolute top-4 left-4">
+                            <span class="bg-on-secondary-fixed/90 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-wider">{{ book.format }}</span>
+                        </div>
+                        
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#0f172a]/90 via-[#0f172a]/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end p-4 md:p-6">
+                            <a href="/read_book/{{ book.id }}" class="w-full bg-primary hover:bg-primary-container text-white py-3 rounded-xl font-bold text-center transition-colors shadow-lg shadow-primary/30">
+                                Read Chapter 1
+                            </a>
+                        </div>
+                    </div>
+                    <h3 class="font-headline font-bold text-lg text-on-secondary-fixed mb-1 group-hover:text-primary transition-colors line-clamp-1">{{ book.title }}</h3>
+                    <div class="flex items-center gap-2 text-sm text-slate-500">
+                        <span class="font-medium">{{ book.author_name }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-span-full py-20 text-center bg-surface-container-low rounded-2xl border-2 border-dashed border-pink-200">
+                    <span class="material-symbols-outlined text-6xl text-pink-300 mb-4">library_books</span>
+                    <h3 class="text-xl font-bold text-slate-600 font-headline mb-2">Your library is empty!</h3>
+                    <p class="text-slate-500">Log in to the dashboard to publish your first series.</p>
+                </div>
+                {% endfor %}
+                </div>
+        </section>
+    </main>
+
+    <div class="fixed bottom-8 right-8 z-50 flex flex-col items-end">
+        <div id="chatWindow" class="chat-hidden bg-white w-[350px] md:w-[400px] h-[500px] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-pink-100 mb-4 flex flex-col overflow-hidden">
+            <div class="bg-gradient-to-r from-primary to-primary-container p-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                        <span class="material-symbols-outlined text-white">smart_toy</span>
+                    </div>
+                    <div>
+                        <h4 class="text-white font-bold font-headline leading-tight">Pinky AI</h4>
+                        <span class="text-primary-fixed-dim text-xs">Digital Librarian</span>
+                    </div>
+                </div>
+                <button onclick="toggleChat()" class="text-white/80 hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div id="chatHistory" class="flex-1 p-4 overflow-y-auto bg-surface flex flex-col gap-4">
+                <div class="flex gap-3 max-w-[85%]">
+                    <div class="w-8 h-8 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-primary text-sm">smart_toy</span>
+                    </div>
+                    <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-pink-50 text-sm text-slate-700">
+                        Hi there! Looking for your next obsession? Tell me what kind of story you're in the mood for! (e.g., "A sci-fi action manhwa about hackers")
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-white border-t border-pink-50">
+                <form id="chatForm" class="flex gap-2">
+                    <input type="text" id="chatInput" class="flex-1 bg-surface-container-low border border-pink-100 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="Ask Pinky..." required>
+                    <button type="submit" class="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center hover:bg-primary-container transition-colors shadow-sm">
+                        <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">send</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="group relative">
+            <div id="chatTooltip" class="absolute bottom-full right-0 mb-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <div class="bg-slate-800 text-white text-xs font-bold py-2 px-4 rounded-xl whitespace-nowrap shadow-xl">
+                    Ask Pinky for a recommendation
+                </div>
+                <div class="absolute bottom-[-4px] right-6 w-3 h-3 bg-slate-800 rotate-45"></div>
+            </div>
+            <button onclick="toggleChat()" class="w-14 h-14 reading-gradient rounded-full flex items-center justify-center text-white shadow-xl shadow-primary/30 hover:scale-110 transition-all active:scale-95">
+                <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. SEARCH & FILTER LOGIC ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('searchInput');
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            const bookCards = document.querySelectorAll('.book-card');
+
+            function filterBooks() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const activeFilter = document.querySelector('.filter-btn.active').getAttribute('data-filter');
+
+                bookCards.forEach(card => {
+                    const title = card.getAttribute('data-title');
+                    const author = card.getAttribute('data-author');
+                    const format = card.getAttribute('data-format');
+
+                    const matchesSearch = title.includes(searchTerm) || author.includes(searchTerm);
+                    const matchesFilter = activeFilter === 'all' || format === activeFilter;
+
+                    if (matchesSearch && matchesFilter) {
+                        card.style.display = 'flex';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            }
+
+            searchInput.addEventListener('input', filterBooks);
+
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    filterBtns.forEach(b => {
+                        b.classList.remove('bg-primary-container', 'text-on-primary-container', 'font-bold', 'active');
+                        b.classList.add('bg-white', 'border', 'border-pink-100', 'text-slate-600', 'font-medium');
+                    });
+                    
+                    const clickedBtn = e.target;
+                    clickedBtn.classList.remove('bg-white', 'border', 'border-pink-100', 'text-slate-600', 'font-medium');
+                    clickedBtn.classList.add('bg-primary-container', 'text-on-primary-container', 'font-bold', 'active');
+
+                    filterBooks();
+                });
+            });
+        });
+
+        // --- 2. ENHANCED NAVBAR LOGIC (CLICK + SCROLL) ---
+        const navHome = document.getElementById('nav-home');
+        const navCatalog = document.getElementById('nav-catalog');
+        const catalogSection = document.getElementById('catalog');
+
+        // Helper function to swap the pink colors instantly
+        function setActiveNav(activeTab, inactiveTab) {
+            activeTab.classList.remove('text-slate-600', 'border-transparent');
+            activeTab.classList.add('text-primary', 'border-primary');
+            
+            inactiveTab.classList.remove('text-primary', 'border-primary');
+            inactiveTab.classList.add('text-slate-600', 'border-transparent');
+        }
+
+        // 1. Listen for Clicks (Smooth Scroll + Instant Color Change)
+        navHome.addEventListener('click', (e) => {
+            e.preventDefault(); // Stop default jumping
+            window.scrollTo({ top: 0, behavior: 'smooth' }); // Slide to top smoothly
+            setActiveNav(navHome, navCatalog);
+        });
+
+        navCatalog.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (catalogSection) {
+                // Slide down to the catalog, leaving 100px of space for the navbar
+                const targetPosition = catalogSection.getBoundingClientRect().top + window.scrollY - 100;
+                window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+            }
+            setActiveNav(navCatalog, navHome);
+        });
+
+        // 2. Listen for Manual Scrolling (Keep it synced if they use the mouse wheel)
+        window.addEventListener('scroll', () => {
+            if (!catalogSection) return;
+            
+            if (window.scrollY >= (catalogSection.offsetTop - 150)) {
+                setActiveNav(navCatalog, navHome);
+            } else {
+                setActiveNav(navHome, navCatalog);
+            }
+        });
+
+        // --- 3. AI CHATBOT LOGIC ---
+        const chatWindow = document.getElementById('chatWindow');
+        const chatTooltip = document.getElementById('chatTooltip');
+        const chatHistory = document.getElementById('chatHistory');
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = document.getElementById('chatInput');
+
+        function toggleChat() {
+            if (chatWindow.classList.contains('chat-hidden')) {
+                chatWindow.classList.remove('chat-hidden');
+                chatWindow.classList.add('chat-visible');
+                chatTooltip.style.opacity = '0'; 
+            } else {
+                chatWindow.classList.add('chat-hidden');
+                chatWindow.classList.remove('chat-visible');
+            }
+        }
+
+        function addMessage(sender, text) {
+            const isUser = sender === 'user';
+            const html = `
+                <div class="flex gap-3 max-w-[85%] ${isUser ? 'self-end flex-row-reverse' : ''}">
+                    <div class="w-8 h-8 rounded-full ${isUser ? 'bg-slate-200' : 'bg-primary/10'} flex-shrink-0 flex items-center justify-center">
+                        <span class="material-symbols-outlined ${isUser ? 'text-slate-500' : 'text-primary'} text-sm">${isUser ? 'person' : 'smart_toy'}</span>
+                    </div>
+                    <div class="p-3 rounded-2xl ${isUser ? 'bg-primary text-white rounded-tr-none' : 'bg-white border border-pink-50 shadow-sm text-slate-700 rounded-tl-none'} text-sm">
+                        ${text}
+                    </div>
+                </div>
+            `;
+            chatHistory.insertAdjacentHTML('beforeend', html);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function addRecommendationCard(book) {
+            const html = `
+                <div class="flex gap-3 max-w-[90%] ml-11 mt-1">
+                    <div class="bg-white border border-pink-100 rounded-xl p-3 shadow-sm flex gap-3 w-full hover:border-primary/30 transition-colors cursor-pointer" onclick="window.location.href='/read_book/${book.id}'">
+                        <img src="${book.cover_image_url || '/static/uploads/covers/default.png'}" class="w-12 h-16 object-cover rounded-md bg-slate-100">
+                        <div class="flex flex-col justify-center">
+                            <span class="text-xs font-bold bg-pink-50 text-slate-500 px-2 py-0.5 rounded w-fit mb-1">${book.format}</span>
+                            <h5 class="font-bold text-sm text-slate-800 line-clamp-1 leading-tight">${book.title}</h5>
+                            <span class="text-xs text-slate-500">${book.author}</span>
+                            <span class="text-[10px] text-primary font-bold mt-1">${book.match_score}% Match</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatHistory.insertAdjacentHTML('beforeend', html);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function showTyping() {
+            const id = 'typing-' + Date.now();
+            const html = `
+                <div id="${id}" class="flex gap-3 max-w-[85%]">
+                    <div class="w-8 h-8 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-primary text-sm">smart_toy</span>
+                    </div>
+                    <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-pink-50 flex items-center gap-1 px-4">
+                        <svg height="6" width="24" class="fill-primary">
+                            <circle class="typing-dot" cx="3" cy="3" r="3"/>
+                            <circle class="typing-dot" cx="12" cy="3" r="3"/>
+                            <circle class="typing-dot" cx="21" cy="3" r="3"/>
+                        </svg>
+                    </div>
+                </div>
+            `;
+            chatHistory.insertAdjacentHTML('beforeend', html);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+            return id;
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            addMessage('user', message);
+            chatInput.value = '';
+            const typingId = showTyping();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                const data = await response.json();
+
+                document.getElementById(typingId).remove();
+                addMessage('bot', data.reply);
+                
+                if (data.recommendations && data.recommendations.length > 0) {
+                    data.recommendations.forEach(book => addRecommendationCard(book));
+                }
+            } catch (error) {
+                document.getElementById(typingId).remove();
+                addMessage('bot', "Oops! My connection to the server dropped. Please try again.");
+            }
+        });
+    </script>
+</body>
+</html>
